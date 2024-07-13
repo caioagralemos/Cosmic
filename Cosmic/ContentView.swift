@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 
-struct MissionButtonView: View {
+struct GridButtonView: View {
     let mission: Mission
     var body: some View {
         VStack {
@@ -39,7 +39,31 @@ struct MissionButtonView: View {
     }
 }
 
+struct ListButtonView: View {
+    var mission: Mission
+    var body: some View {
+            HStack {
+                Image(mission.image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 100, height: 100)
+                
+                Spacer()
+                VStack {
+                    Text(mission.displayName).font(.largeTitle).bold()
+                    
+                    Text(mission.date).foregroundStyle(.white).opacity(0.6)
+                }
+                
+            }.frame(maxWidth: .infinity).padding().padding(.horizontal)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 30).stroke(lineWidth: 5).foregroundStyle(.darkBackground)
+                }
+        }
+    }
+
 struct ContentView: View {
+    @State var path = NavigationPath()
     let astronauts: [String: Astronaut] = Bundle.main.decode("astronauts.json")
     var missions: [Mission] = Bundle.main.decode("missions.json")
     @State var showList = false
@@ -48,7 +72,7 @@ struct ContentView: View {
     ]
     
     var body: some View {
-        NavigationStack {
+        NavigationStack (path: $path) {
             ZStack {
                 BackgroundView()
                 
@@ -57,36 +81,20 @@ struct ContentView: View {
                         if showList {
                             LazyVStack(spacing: 20) {
                                 ForEach (missions, id: \.self.id) { mission in
-                                    NavigationLink {
-                                        MissionView(mission: mission, astronauts: astronauts)
+                                    Button {
+                                        path.append(mission)
                                     } label: {
-                                        HStack {
-                                            Image(mission.image)
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(width: 100, height: 100)
-                                            
-                                            Spacer()
-                                            VStack {
-                                                Text(mission.displayName).font(.largeTitle).bold()
-                                                
-                                                Text(mission.date).foregroundStyle(.white).opacity(0.6)
-                                            }
-                                            
-                                        }.frame(maxWidth: .infinity).padding().padding(.horizontal)
-                                            .overlay {
-                                                RoundedRectangle(cornerRadius: 30).stroke(lineWidth: 5).foregroundStyle(.darkBackground)
-                                            }
+                                        ListButtonView(mission: mission)
                                     }
                                 }
                             }.padding(.horizontal, 10)
                             } else {
                                 LazyVGrid (columns: layout) {
                                     ForEach (missions, id: \.self.id) { mission in
-                                        NavigationLink {
-                                            MissionView(mission: mission, astronauts: astronauts)
+                                        Button {
+                                            path.append(mission)
                                         } label: {
-                                            MissionButtonView(mission: mission)
+                                            GridButtonView(mission: mission)
                                         }
                                     }
                                 }.padding([.horizontal, .bottom])
@@ -96,6 +104,9 @@ struct ContentView: View {
             }
             .foregroundStyle(.white)
             
+            .navigationDestination(for: Mission.self) { selection in
+                MissionView(mission: selection, astronauts: astronauts)
+            }
             .navigationTitle("Cosmic")
             .toolbar {
                 ToolbarItem (placement: .topBarTrailing) {
